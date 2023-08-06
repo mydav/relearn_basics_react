@@ -1,25 +1,32 @@
 import React from 'react';
 import './index.scss';
+import { Success } from './components/Success';
+import { Users } from './components/Users';
+
+// Тут список пользователей: https://reqres.in/api/users
 
 function App() {
-  const [count, setCount] = React.useState(0)
+  const [users, setUsers] = React.useState([]);
+  const [isLoading, setLoading] = React.useState(true);
 
-  const onClickPlus = () => {
-    setCount(count + 1)
-  }
 
-  const onClickMinus = () => {
-    setCount(count - 1)
-  }
+  React.useEffect (() => {
+    fetch('https://reqres.in/api/users')
+    .then((res) => res.json())
+    .then((json) => {
+      setUsers(json.data);
+    })
+    .catch((err) => {
+      console.warm(err);
+      alert('Fetching data error!');
+    })
+    .finally( () => setLoading(false));
+  }, []);
 
   return (
     <div className="App">
-      <div>
-        <h2>Counter:</h2>
-        <h1>{count}</h1>
-        <button onClick = {onClickMinus} className="minus">- Minus</button>
-        <button onClick = {onClickPlus} className="plus">Plus +</button>
-      </div>
+      <Users items={users} isLoading={isLoading} />
+      {/* <Success /> */}
     </div>
   );
 }
