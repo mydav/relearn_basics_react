@@ -1,63 +1,69 @@
 import React from 'react';
+import { Block } from './Block';
 import './index.scss';
-import { Success } from './components/Success';
-import { Users } from './components/Users';
-
-// Users list: https://reqres.in/api/users
 
 function App() {
-  const [users, setUsers] = React.useState([]);
-  const [invites, setInvites] = React.useState([]);
-  const [isLoading, setLoading] = React.useState(true);
-  const [success, setSuccess] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
+  const [firstCurrency, setFirstCurrency] = React.useState('USD');
+  const [secondCurrency, setSecondCurrency] = React.useState('EUR');
+  const [firstPrice, setFirstPrice] = React.useState(0);
+  const [secondPrice, setSecondPrice] = React.useState(0);
+ 
+  const ratesRef = React.useRef({})
 
-
-  React.useEffect (() => {
-    fetch('https://reqres.in/api/users')
-    .then((res) => res.json())
-    .then((json) => {
-      setUsers(json.data);
+  React.useEffect(() => {
+    fetch('https://www.cbr-xml-daily.ru/latest.js')
+    .then(res => res.json())
+    .then(json => {
+      ratesRef.current = json.rates;
+      onChangeFirstPrice(1);
     })
-    .catch((err) => {
+    .catch(err => {
       console.warm(err);
-      alert('Fetching data error!');
-    })
-    .finally( () => setLoading(false));
-  }, []);
+      alert('Fetching data error')
+    });
+  }, [])
 
-  const onChangeSearchValue = (event) => {
-    setSearchValue(event.target.value)
-  };
+  const onChangeFirstPrice = React.useCallback(
+    value => {
+      const price = value / ratesRef.current[firstCurrency];
+      const result = price * ratesRef.current[secondCurrency];
+      setFirstPrice(value);
+      setSecondPrice(result.toFixed(3));
+    },
+    [firstCurrency, secondCurrency]
+  );
 
-  const onClickSend = () => {
-    setSuccess(true)
-  };
 
+  const onChangeSecondPrice = React.useCallback(
+    value => {
+      const result = (ratesRef.current[firstCurrency] / ratesRef.current[secondCurrency]) * value;
+      setFirstPrice(result.toFixed(3));
+      setSecondPrice(value);
+    },
+    [firstCurrency, secondCurrency]
+  );
+React.useEffect(() => {
+  onChangeFirstPrice(firstPrice)
+}, [firstCurrency]);
 
-  const onClickInvite = (id) => {
-    if (invites.includes(id)) {
-      setInvites((prev) => prev.filter((_id) => _id !== id));
-    } else {
-      setInvites((prev) => [...prev, id]);
-    }
-  };
+React.useEffect(() => {
+  onChangeSecondPrice(secondPrice)
+}, [secondCurrency]);
 
   return (
     <div className="App">
-      
-      {success ? (
-        <Success count={invites.length} />
-      ) : (
-        <Users 
-          onChangeSearchValue={onChangeSearchValue}
-          searchValue={searchValue} 
-          items={users} 
-          isLoading={isLoading}
-          invites={invites}
-          onClickInvite={onClickInvite}
-          onClickSend={onClickSend} />
-      )}
+      <Block 
+        value={firstPrice} 
+        currency={firstCurrency} 
+        onChangeCurrency={setFirstCurrency} 
+        onChangeValue={onChangeFirstPrice}
+      />
+      <Block 
+        value={secondPrice} 
+        currency={secondCurrency} 
+        onChangeCurrency={setSecondCurrency} 
+        onChangeValue={onChangeSecondPrice}
+      />
     </div>
   );
 }
